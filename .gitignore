@@ -7,7 +7,6 @@ __pycache__/
 
 # Virtual environments
 venv/
-env/
 ENV/
 .venv
 
@@ -54,7 +53,6 @@ coverage.xml
 # Environments
 .env
 .venv
-env/
 venv/
 ENV/
 env.bak/
