@@ -1,0 +1,113 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Virtual environments
+venv/
+env/
+ENV/
+.venv
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# IPython
+profile_default/
+ipython_config.py
+
+# Distribution / packaging
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# PyInstaller
+*.manifest
+*.spec
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+.pytest_cache/
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# IDE
+.vscode/
+.idea/
+.cursor/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Results (keep structure, ignore data)
+results/*.csv
+results/*.png
+results/*.svg
+results/*.pdf
+results/logs/*.out
+results/logs/*.err
+
+# Keep directory structure
+!results/.gitkeep
+!results/logs/.gitkeep
+
+# Slurm output files
+slurm-*.out
+*.o[0-9]*
+*.e[0-9]*
+
+# Apptainer/Singularity
+*.sif
+*.simg
+
+# Large data files
+*.h5
+*.hdf5
+*.nc
+
+# Compiled code
+*.o
+*.a
+*.out
+
+# Profiling output
+*.prof
+*.lprof
+perf.data
+perf.data.old
+
+# Editor backup files
+*~
+\#*\#
+.\#*
+

@@ -1,0 +1,7 @@
+case_name,S0,K,T,r,sigma,description
+ATM_1year,100.0,100.0,1.0,0.05,0.20,At-the-money call with 1 year maturity
+ITM_1year,110.0,100.0,1.0,0.05,0.20,In-the-money call (10% ITM)
+OTM_1year,90.0,100.0,1.0,0.05,0.20,Out-of-the-money call (10% OTM)
+ATM_short,100.0,100.0,0.25,0.05,0.20,At-the-money with 3 months to expiry
+ATM_highvol,100.0,100.0,1.0,0.05,0.40,At-the-money with high volatility (40%)
+
