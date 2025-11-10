@@ -25,13 +25,17 @@ function print_usage() {
     echo ""
     echo "Commands:"
     echo "  test       - Run validation tests (compare MC vs Black-Scholes)"
-    echo "  example    - Run example option pricing"
+    echo "  test-mpi   - Test MPI implementation"
+    echo "  example    - Run serial example option pricing"
+    echo "  example-mpi - Run MPI example (requires mpirun)"
     echo "  bs         - Test Black-Scholes formula only"
     echo "  help       - Show this help message"
     echo ""
     echo "Examples:"
     echo "  $0 test"
     echo "  $0 example"
+    echo "  $0 test-mpi"
+    echo "  $0 example-mpi"
 }
 
 function run_tests() {
@@ -63,13 +67,44 @@ function test_black_scholes() {
     python3 src/option_pricing.py
 }
 
+function test_mpi() {
+    echo -e "${GREEN}Running MPI comparison tests...${NC}"
+    python3 tests/test_mpi_serial_comparison.py
+}
+
+function run_example_mpi() {
+    echo -e "${GREEN}Running MPI example option pricing...${NC}"
+    echo ""
+    
+    # Check if mpirun exists
+    if ! command -v mpirun &> /dev/null; then
+        echo -e "${RED}Error: mpirun not found${NC}"
+        echo "Install OpenMPI:"
+        echo "  macOS:  brew install open-mpi"
+        echo "  Ubuntu: sudo apt-get install openmpi-bin"
+        exit 1
+    fi
+    
+    echo "Example: 4 MPI ranks with 100K samples each (400K total)"
+    mpirun -n 4 python3 src/mpi_monte_carlo.py \
+        --n-samples 400000 \
+        --S0 100 --K 100 --T 1.0 --r 0.05 --sigma 0.2 \
+        --validate
+}
+
 # Main command dispatcher
 case "${1:-help}" in
     test)
         run_tests
         ;;
+    test-mpi)
+        test_mpi
+        ;;
     example)
         run_example
+        ;;
+    example-mpi)
+        run_example_mpi
         ;;
     bs)
         test_black_scholes

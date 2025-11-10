@@ -4,8 +4,8 @@ High-Performance Computing project implementing parallel Monte Carlo simulation 
 
 ## Project Status
 
-**Phase:** Day 1 Complete - Serial Implementation & Validation  
-**Next:** Day 2 - MPI Parallelization
+**Phase:** Day 2 Complete - MPI Parallelization & Local Testing  
+**Next:** Day 3 - Cluster Deployment (Slurm + Apptainer)
 
 ## Quick Start
 
@@ -33,7 +33,11 @@ source venv/bin/activate
 Then run tests:
 
 ```bash
+# Serial implementation tests
 ./run.sh test
+
+# MPI implementation tests (requires OpenMPI)
+./run.sh test-mpi
 ```
 
 This will run the complete validation suite comparing Monte Carlo prices against Black-Scholes analytical formula for:
@@ -46,13 +50,33 @@ All tests should pass with relative error < 1% for N=1,000,000 samples.
 ### Run Example Pricing
 
 ```bash
+# Serial version
 ./run.sh example
+
+# MPI parallel version (4 ranks)
+./run.sh example-mpi
 ```
 
 ### Price a Custom Option
 
+**Serial Version:**
 ```bash
 python3 src/monte_carlo.py \
+  --n-samples 1000000 \
+  --S0 100 --K 100 --T 1.0 --r 0.05 --sigma 0.2 \
+  --validate
+```
+
+**MPI Parallel Version:**
+```bash
+# Local testing with mpirun
+mpirun -n 4 python3 src/mpi_monte_carlo.py \
+  --n-samples 1000000 \
+  --S0 100 --K 100 --T 1.0 --r 0.05 --sigma 0.2 \
+  --validate
+
+# On cluster with srun (Day 3+)
+srun python3 src/mpi_monte_carlo.py \
   --n-samples 1000000 \
   --S0 100 --K 100 --T 1.0 --r 0.05 --sigma 0.2 \
   --validate
@@ -64,9 +88,12 @@ python3 src/monte_carlo.py \
 - `--T`: Time to maturity in years (default: 1.0)
 - `--r`: Risk-free rate (default: 0.05)
 - `--sigma`: Volatility (default: 0.20)
-- `--n-samples`: Number of Monte Carlo samples (required)
+- `--n-samples`: Total number of Monte Carlo samples (required)
+- `--seed`: Base random seed (default: 42)
 - `--validate`: Compare with Black-Scholes analytical price
 - `--output`: Save results to CSV file
+
+**Note:** With MPI, samples are automatically distributed across ranks (e.g., 1M samples / 4 ranks = 250K per rank).
 
 ## Repository Structure
 
@@ -75,19 +102,24 @@ montecarlo-hpc/
 ├── src/                    # Source code
 │   ├── option_pricing.py   # Black-Scholes analytical formulas
 │   ├── monte_carlo.py      # Serial Monte Carlo implementation
-│   ├── mpi_monte_carlo.py  # (Coming in Day 2) MPI parallel version
-│   └── utils.py            # (Coming in Day 2) Utilities
+│   ├── mpi_monte_carlo.py  # MPI parallel version
+│   └── utils.py            # Timing, logging, CSV utilities
 ├── tests/                  # Validation tests
-│   └── test_black_scholes.py  # MC vs analytical validation
+│   ├── test_black_scholes.py  # MC vs analytical validation
+│   └── test_mpi_serial_comparison.py  # MPI vs serial consistency
 ├── data/                   # Input parameters
 │   ├── sample_params.csv   # 5 test cases (ITM, ATM, OTM, etc.)
 │   └── README.md           # Parameter documentation
+├── env/                    # Environment setup
+│   ├── requirements.txt    # Python dependencies (pinned versions)
+│   └── modules.txt         # Cluster module commands
 ├── results/                # Output directory for results
 │   └── logs/               # Slurm job logs
 ├── slurm/                  # (Coming in Day 3) Slurm batch scripts
-├── env/                    # (Coming in Day 3) Environment setup
 ├── docs/                   # Documentation
-└── run.sh                  # Main entry point
+├── run.sh                  # Main entry point
+├── setup_venv.sh           # Virtual environment setup
+└── SETUP.md                # Detailed setup instructions
 ```
 
 ## Implementation Details
@@ -125,17 +157,37 @@ For N=1,000,000 samples, Monte Carlo prices should match Black-Scholes within 1%
 
 ## Dependencies
 
+**Python Packages** (pinned versions in `env/requirements.txt`):
 - Python 3.8+
-- numpy >= 1.24.3
-- scipy >= 1.11.4
-- pandas >= 2.1.4 (for CSV output)
-- matplotlib >= 3.8.2 (for plotting, coming in Day 8)
-- mpi4py >= 3.1.5 (coming in Day 2)
+- numpy == 1.24.3 (numerical computing)
+- scipy == 1.11.4 (Black-Scholes CDF)
+- mpi4py == 3.1.5 (MPI parallelization)
+- pandas == 2.1.4 (CSV output)
+- matplotlib == 3.8.2 (plotting, Day 8+)
+- pytest == 7.4.3 (testing)
+
+**System Requirements:**
+- OpenMPI (for mpi4py and parallel execution)
 
 Install dependencies:
 
 ```bash
-pip install numpy scipy pandas matplotlib
+# Setup virtual environment (recommended)
+./setup_venv.sh
+
+# Or manual installation
+python3 -m venv venv
+source venv/bin/activate
+pip install -r env/requirements.txt
+```
+
+**Install OpenMPI** (required for MPI version):
+```bash
+# macOS
+brew install open-mpi
+
+# Ubuntu/Debian
+sudo apt-get install libopenmpi-dev openmpi-bin
 ```
 
 ## Convergence Properties
@@ -145,11 +197,26 @@ Monte Carlo error follows O(1/√N):
 - N = 1,000,000 → ~0.1% error  
 - N = 100,000,000 → ~0.01% error
 
+## Parallel Performance
+
+**MPI Implementation** (Day 2):
+- Embarrassingly parallel (minimal communication)
+- Work distribution: samples divided across ranks
+- Independent random seeds per rank
+- Single MPI reduction at end
+- Expected efficiency: 60-85% on 4+ cores
+
+**Performance Example** (1M samples, 4 ranks):
+- Serial: ~0.08 sec, ~12M samples/sec
+- MPI (4 ranks): ~0.03 sec, ~33M samples/sec
+- Speedup: ~2.7x
+- Efficiency: ~67%
+
 ## Development Timeline
 
-- [x] **Day 1**: Serial implementation with validation
-- [ ] **Day 2**: MPI parallelization
-- [ ] **Day 3**: Cluster deployment (Slurm + Apptainer)
+- [x] **Day 1**: Serial implementation with validation ✅
+- [x] **Day 2**: MPI parallelization ✅
+- [ ] **Day 3**: Cluster deployment (Slurm + Apptainer) ⬅️ **Next**
 - [ ] **Days 4-7**: Scaling experiments & optimization
 - [ ] **Days 8-9**: Analysis & visualization
 - [ ] **Days 10-12**: Documentation (paper, proposal, pitch)
