@@ -1,237 +1,164 @@
 # Monte Carlo European Option Pricing - HPC Project
 
-High-Performance Computing project implementing parallel Monte Carlo simulation for European option pricing using the Black-Scholes model.
+Parallel Monte Carlo simulation for European option pricing using the Black-Scholes model.  
+Demonstrates HPC scaling, profiling, and variance reduction techniques.
 
-## Project Status
+---
 
-**Phase:** Day 2 Complete - MPI Parallelization & Local Testing  
-**Next:** Day 3 - Cluster Deployment (Slurm + Apptainer)
+## 🚀 Quick Start
 
-## Quick Start
-
-### Setup Environment (First Time)
+### Local Testing (Optional)
 
 ```bash
-# Automated setup
-./setup_venv.sh
-
-# Or manual setup
-python3 -m venv venv
-source venv/bin/activate
-pip install -r env/requirements.txt
+# Run automated test suite
+./test_all.sh
 ```
 
-See [SETUP.md](SETUP.md) for detailed setup instructions.
+See [TESTING.md](TESTING.md) for details.
 
-### Run Validation Tests
-
-**Important**: Always activate the virtual environment first:
-```bash
-source venv/bin/activate
-```
-
-Then run tests:
+### Cluster Deployment
 
 ```bash
-# Serial implementation tests
-./run.sh test
+# 1. SSH to cluster
+ssh user91@login1.hpcie.labs.faculty.ie.edu
 
-# MPI implementation tests (requires OpenMPI)
-./run.sh test-mpi
+# 2. Clone and setup
+git clone https://github.com/YOUR-USERNAME/montecarlo-hpc.git
+cd montecarlo-hpc
+module load gcc openmpi python/3
+pip install --user -r env/requirements.txt
+mkdir -p results/logs
+
+# 3. Test it works
+python src/monte_carlo.py --n-samples 100000 --validate
+
+# 4. Submit test job
+sbatch slurm/test_run.sbatch
+
+# 5. Run all experiments
+./run.sh submit-all
+
+# 6. Check status
+./run.sh status
 ```
 
-This will run the complete validation suite comparing Monte Carlo prices against Black-Scholes analytical formula for:
-- At-the-money (ATM) options
-- In-the-money (ITM) options  
-- Out-of-the-money (OTM) options
+**Complete guide:** [TESTING.md](TESTING.md)
 
-All tests should pass with relative error < 1% for N=1,000,000 samples.
+---
 
-### Run Example Pricing
-
-```bash
-# Serial version
-./run.sh example
-
-# MPI parallel version (4 ranks)
-./run.sh example-mpi
-```
-
-### Price a Custom Option
-
-**Serial Version:**
-```bash
-python3 src/monte_carlo.py \
-  --n-samples 1000000 \
-  --S0 100 --K 100 --T 1.0 --r 0.05 --sigma 0.2 \
-  --validate
-```
-
-**MPI Parallel Version:**
-```bash
-# Local testing with mpirun
-mpirun -n 4 python3 src/mpi_monte_carlo.py \
-  --n-samples 1000000 \
-  --S0 100 --K 100 --T 1.0 --r 0.05 --sigma 0.2 \
-  --validate
-
-# On cluster with srun (Day 3+)
-srun python3 src/mpi_monte_carlo.py \
-  --n-samples 1000000 \
-  --S0 100 --K 100 --T 1.0 --r 0.05 --sigma 0.2 \
-  --validate
-```
-
-**Parameters:**
-- `--S0`: Initial stock price (default: 100.0)
-- `--K`: Strike price (default: 100.0)
-- `--T`: Time to maturity in years (default: 1.0)
-- `--r`: Risk-free rate (default: 0.05)
-- `--sigma`: Volatility (default: 0.20)
-- `--n-samples`: Total number of Monte Carlo samples (required)
-- `--seed`: Base random seed (default: 42)
-- `--validate`: Compare with Black-Scholes analytical price
-- `--output`: Save results to CSV file
-
-**Note:** With MPI, samples are automatically distributed across ranks (e.g., 1M samples / 4 ranks = 250K per rank).
-
-## Repository Structure
+## 📁 Repository Structure
 
 ```
 montecarlo-hpc/
-├── src/                    # Source code
-│   ├── option_pricing.py   # Black-Scholes analytical formulas
-│   ├── monte_carlo.py      # Serial Monte Carlo implementation
-│   ├── mpi_monte_carlo.py  # MPI parallel version
-│   └── utils.py            # Timing, logging, CSV utilities
-├── tests/                  # Validation tests
-│   ├── test_black_scholes.py  # MC vs analytical validation
-│   └── test_mpi_serial_comparison.py  # MPI vs serial consistency
-├── data/                   # Input parameters
-│   ├── sample_params.csv   # 5 test cases (ITM, ATM, OTM, etc.)
-│   └── README.md           # Parameter documentation
-├── env/                    # Environment setup
-│   ├── requirements.txt    # Python dependencies (pinned versions)
-│   └── modules.txt         # Cluster module commands
-├── results/                # Output directory for results
-│   └── logs/               # Slurm job logs
-├── slurm/                  # (Coming in Day 3) Slurm batch scripts
-├── docs/                   # Documentation
-├── run.sh                  # Main entry point
-├── setup_venv.sh           # Virtual environment setup
-└── SETUP.md                # Detailed setup instructions
+├── src/            # Source code (6 Python modules)
+├── env/            # Environment config (requirements.txt, modules.txt)
+├── slurm/          # Slurm job scripts (5 experiments)
+├── data/           # Sample option parameters
+├── results/        # Output CSV + plots + logs
+├── tests/          # Unit tests
+├── docs/           # Documentation (paper, proposal will go here)
+├── run.sh          # Main runner script
+└── test_all.sh     # Automated test suite
 ```
 
-## Implementation Details
+---
 
-### Black-Scholes Model
+## 🔬 What It Does
 
-European call option price under Black-Scholes:
+**Application:** Monte Carlo simulation for European call option pricing
 
-```
-C = S₀ · N(d₁) - K · e^(-rT) · N(d₂)
+**Algorithm:**
+1. Simulate stock price paths using Geometric Brownian Motion
+2. Calculate option payoffs: max(S_T - K, 0)
+3. Average and discount to get option price
+4. Parallel implementation using MPI
 
-where:
-  d₁ = [ln(S₀/K) + (r + σ²/2)T] / (σ√T)
-  d₂ = d₁ - σ√T
-  N(x) = cumulative standard normal distribution
-```
+**Optimization:** Antithetic variates variance reduction (~2x improvement)
 
-### Monte Carlo Algorithm
+---
 
-1. Generate N random samples Z ~ N(0,1)
-2. Simulate terminal stock prices: S_T = S₀ · exp((r - 0.5σ²)T + σ√T·Z)
-3. Calculate payoffs: max(S_T - K, 0)
-4. Discount to present: C = e^(-rT) · mean(payoffs)
-5. Compute standard error: stderr = e^(-rT) · std(payoffs) / √N
+## 📊 Experiments Included
 
-### Validation Results (Expected)
+| Experiment | Purpose | Script |
+|------------|---------|--------|
+| Strong scaling | Fixed problem, vary nodes | `slurm/cpu_strong_scaling.sbatch` |
+| Weak scaling | Proportional problem | `slurm/cpu_weak_scaling.sbatch` |
+| Convergence | Verify O(1/√N) error | `slurm/convergence_test.sbatch` |
+| Profiling | Identify bottlenecks | `slurm/profile_run.sbatch` |
+| Test | Basic functionality | `slurm/test_run.sbatch` |
 
-For N=1,000,000 samples, Monte Carlo prices should match Black-Scholes within 1%:
+**Submit all:** `./run.sh submit-all`
 
-| Scenario | S₀ | K | BS Price | MC Price | Error |
-|----------|-----|-----|----------|----------|-------|
-| ATM | $100 | $100 | $10.45 | ~$10.45 | < 1% |
-| ITM | $110 | $100 | $16.71 | ~$16.71 | < 1% |
-| OTM | $90 | $100 | $5.54 | ~$5.54 | < 1% |
+---
 
-## Dependencies
-
-**Python Packages** (pinned versions in `env/requirements.txt`):
-- Python 3.8+
-- numpy == 1.24.3 (numerical computing)
-- scipy == 1.11.4 (Black-Scholes CDF)
-- mpi4py == 3.1.5 (MPI parallelization)
-- pandas == 2.1.4 (CSV output)
-- matplotlib == 3.8.2 (plotting, Day 8+)
-- pytest == 7.4.3 (testing)
-
-**System Requirements:**
-- OpenMPI (for mpi4py and parallel execution)
-
-Install dependencies:
+## 📈 Results & Plotting
 
 ```bash
-# Setup virtual environment (recommended)
-./setup_venv.sh
+# After experiments complete, download results
+scp -r user91@login1.hpcie.labs.faculty.ie.edu:~/montecarlo-hpc/results .
 
-# Or manual installation
-python3 -m venv venv
-source venv/bin/activate
-pip install -r env/requirements.txt
+# Generate plots
+python src/plot_results.py --all results/
+
+# Creates 4 publication-quality plots:
+# - strong_scaling.png (speedup vs nodes)
+# - weak_scaling.png (efficiency vs nodes)
+# - convergence.png (error vs N, log-log)
+# - optimization.png (baseline vs antithetic variates)
 ```
 
-**Install OpenMPI** (required for MPI version):
-```bash
-# macOS
-brew install open-mpi
+---
 
-# Ubuntu/Debian
-sudo apt-get install libopenmpi-dev openmpi-bin
-```
+## 🎯 Assignment Requirements
 
-## Convergence Properties
+| Requirement | Status | Location |
+|-------------|--------|----------|
+| Runs on ≥2 nodes | ✅ | All scaling scripts |
+| run.sh | ✅ | Root directory |
+| submit.sbatch | ✅ | `slurm/*.sbatch` (5 scripts) |
+| Strong & weak scaling | ✅ | Scripts + plotting |
+| Profiling | ✅ | `slurm/profile_run.sbatch` |
+| Optimization | ✅ | Antithetic variates |
+| Reproducibility | ✅ | Pinned versions, fixed seeds |
+| Environment config | ✅ | `env/requirements.txt`, `env/modules.txt` |
 
-Monte Carlo error follows O(1/√N):
-- N = 10,000 → ~1% error
-- N = 1,000,000 → ~0.1% error  
-- N = 100,000,000 → ~0.01% error
+**Paper & proposal:** Will be added to `docs/` (Days 10-12)
 
-## Parallel Performance
+---
 
-**MPI Implementation** (Day 2):
-- Embarrassingly parallel (minimal communication)
-- Work distribution: samples divided across ranks
-- Independent random seeds per rank
-- Single MPI reduction at end
-- Expected efficiency: 60-85% on 4+ cores
+## 🔧 Key Features
 
-**Performance Example** (1M samples, 4 ranks):
-- Serial: ~0.08 sec, ~12M samples/sec
-- MPI (4 ranks): ~0.03 sec, ~33M samples/sec
-- Speedup: ~2.7x
-- Efficiency: ~67%
+- **Simple:** Embarrassingly parallel Monte Carlo (minimal communication)
+- **Validated:** Compares against Black-Scholes analytical formula
+- **Optimized:** Antithetic variates variance reduction
+- **Reproducible:** Fixed random seeds, pinned package versions
+- **Scalable:** MPI implementation tested on 1-8 nodes
+- **Well-tested:** Comprehensive unit tests included
 
-## Development Timeline
+---
 
-- [x] **Day 1**: Serial implementation with validation ✅
-- [x] **Day 2**: MPI parallelization ✅
-- [ ] **Day 3**: Cluster deployment (Slurm + Apptainer) ⬅️ **Next**
-- [ ] **Days 4-7**: Scaling experiments & optimization
-- [ ] **Days 8-9**: Analysis & visualization
-- [ ] **Days 10-12**: Documentation (paper, proposal, pitch)
-- [ ] **Days 13-14**: Final testing & submission
+## 📚 Documentation
 
-## Team
+- **[TESTING.md](TESTING.md)** - Complete testing & deployment guide
+- **[docs/README.md](docs/README.md)** - Documentation index
+- **[data/README.md](data/README.md)** - Sample parameters explanation
 
-5-7 students working on HPC class project
+---
 
-## References
+## 👥 Team
 
-- Black, F., & Scholes, M. (1973). The Pricing of Options and Corporate Liabilities. *Journal of Political Economy*, 81(3), 637-654.
-- Glasserman, P. (2003). *Monte Carlo Methods in Financial Engineering*. Springer.
-- Hull, J. C. (2022). *Options, Futures, and Other Derivatives* (11th ed.). Pearson.
+5-7 students, HPC class project
 
-## License
+## 📖 References
 
-Educational project for HPC coursework.
+- Black, F., & Scholes, M. (1973). The Pricing of Options and Corporate Liabilities.
+- Glasserman, P. (2003). Monte Carlo Methods in Financial Engineering.
+
+---
+
+**Quick commands:**
+- `./test_all.sh` - Test locally
+- `./run.sh submit-all` - Run all experiments on cluster
+- `./run.sh plot` - Generate plots from results
+
+**Need help?** See [TESTING.md](TESTING.md)

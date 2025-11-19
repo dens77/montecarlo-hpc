@@ -57,7 +57,6 @@ coverage.xml
 venv/
 env.bak/
 venv.bak/
-# Note: env/ is a project directory (requirements.txt, modules.txt), not excluded
 
 # IDE
 .vscode/
@@ -85,9 +84,9 @@ slurm-*.out
 *.o[0-9]*
 *.e[0-9]*
 
-# Apptainer/Singularity
-*.sif
-*.simg
+# Container images (not used in this project)
+# *.sif
+# *.simg
 
 # Large data files
 *.h5

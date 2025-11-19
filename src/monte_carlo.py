@@ -22,6 +22,10 @@ from option_pricing import (
     simulate_gbm_terminal_price,
     call_payoff
 )
+from variance_reduction import (
+    antithetic_variates_samples,
+    antithetic_monte_carlo_prices
+)
 
 
 def monte_carlo_european_call(
@@ -90,6 +94,72 @@ def monte_carlo_european_call(
     return option_price, standard_error, elapsed_time
 
 
+def monte_carlo_european_call_antithetic(
+    S0: float,
+    K: float,
+    T: float,
+    r: float,
+    sigma: float,
+    n_samples: int,
+    seed: int = 42
+) -> Tuple[float, float, float]:
+    """
+    Price a European call option using Monte Carlo with antithetic variates.
+    
+    Antithetic variates variance reduction:
+        For each random number Z, also use -Z.
+        This creates negatively correlated pairs that reduce variance.
+        Achieves ~2x variance reduction for same computational cost.
+    
+    Args:
+        S0: Initial stock price
+        K: Strike price
+        T: Time to maturity (years)
+        r: Risk-free rate (annual)
+        sigma: Volatility (annual)
+        n_samples: Total number of Monte Carlo samples (must be even)
+        seed: Random seed for reproducibility
+        
+    Returns:
+        Tuple of (option_price, standard_error, elapsed_time)
+    """
+    # Validate inputs
+    validate_option_params(S0, K, T, r, sigma)
+    assert n_samples > 0, "Number of samples must be positive"
+    assert n_samples % 2 == 0, "Number of samples must be even for antithetic variates"
+    
+    # Set random seed
+    np.random.seed(seed)
+    
+    # Start timing
+    start_time = time.perf_counter()
+    
+    # Generate N/2 antithetic pairs (total N samples)
+    n_pairs = n_samples // 2
+    Z_positive, Z_negative = antithetic_variates_samples(n_pairs, seed=seed)
+    
+    # Compute payoffs for both paths
+    payoffs_pos, payoffs_neg = antithetic_monte_carlo_prices(
+        S0, K, T, r, sigma, Z_positive, Z_negative
+    )
+    
+    # Combine payoffs
+    all_payoffs = np.concatenate([payoffs_pos, payoffs_neg])
+    
+    # Compute option price: discounted expected payoff
+    discount_factor = np.exp(-r * T)
+    option_price = discount_factor * np.mean(all_payoffs)
+    
+    # Compute standard error
+    std_payoffs = np.std(all_payoffs, ddof=1)
+    standard_error = discount_factor * std_payoffs / np.sqrt(n_samples)
+    
+    # End timing
+    elapsed_time = time.perf_counter() - start_time
+    
+    return option_price, standard_error, elapsed_time
+
+
 def main():
     """Main entry point for command-line execution."""
     parser = argparse.ArgumentParser(
@@ -114,6 +184,8 @@ def main():
                         help="Number of Monte Carlo samples")
     parser.add_argument("--seed", type=int, default=42,
                         help="Random seed for reproducibility")
+    parser.add_argument("--antithetic", action="store_true",
+                        help="Use antithetic variates for variance reduction")
     
     # Output options
     parser.add_argument("--output", type=str, default=None,
@@ -126,6 +198,8 @@ def main():
     # Print configuration
     print("=" * 70)
     print("Monte Carlo European Call Option Pricing")
+    if args.antithetic:
+        print("(with Antithetic Variates Variance Reduction)")
     print("=" * 70)
     print(f"Parameters:")
     print(f"  S0 (Initial price):  ${args.S0:.2f}")
@@ -136,18 +210,36 @@ def main():
     print(f"\nMonte Carlo settings:")
     print(f"  N (samples):          {args.n_samples:,}")
     print(f"  Random seed:          {args.seed}")
+    print(f"  Variance reduction:   {'Antithetic variates' if args.antithetic else 'None'}")
     print("=" * 70)
     
     # Run Monte Carlo simulation
-    mc_price, mc_stderr, elapsed = monte_carlo_european_call(
-        S0=args.S0,
-        K=args.K,
-        T=args.T,
-        r=args.r,
-        sigma=args.sigma,
-        n_samples=args.n_samples,
-        seed=args.seed
-    )
+    if args.antithetic:
+        # Ensure even number of samples for antithetic variates
+        if args.n_samples % 2 != 0:
+            print(f"\nWarning: n_samples must be even for antithetic variates.")
+            print(f"         Adjusting from {args.n_samples} to {args.n_samples + 1}")
+            args.n_samples += 1
+        
+        mc_price, mc_stderr, elapsed = monte_carlo_european_call_antithetic(
+            S0=args.S0,
+            K=args.K,
+            T=args.T,
+            r=args.r,
+            sigma=args.sigma,
+            n_samples=args.n_samples,
+            seed=args.seed
+        )
+    else:
+        mc_price, mc_stderr, elapsed = monte_carlo_european_call(
+            S0=args.S0,
+            K=args.K,
+            T=args.T,
+            r=args.r,
+            sigma=args.sigma,
+            n_samples=args.n_samples,
+            seed=args.seed
+        )
     
     # Calculate throughput
     throughput = args.n_samples / elapsed
@@ -191,8 +283,9 @@ def main():
         # Calculate analytical price for reference
         bs_price = black_scholes_call(args.S0, args.K, args.T, args.r, args.sigma)
         
+        method_name = 'serial_mc_antithetic' if args.antithetic else 'serial_mc'
         results_df = pd.DataFrame([{
-            'method': 'serial_mc',
+            'method': method_name,
             'n_samples': args.n_samples,
             'S0': args.S0,
             'K': args.K,
@@ -206,6 +299,7 @@ def main():
             'rel_error_pct': abs(mc_price - bs_price) / bs_price * 100,
             'elapsed_sec': elapsed,
             'throughput_samples_per_sec': throughput,
+            'antithetic': args.antithetic,
             'seed': args.seed
         }])
         

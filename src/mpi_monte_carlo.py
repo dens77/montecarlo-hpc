@@ -39,6 +39,10 @@ from utils import (
     write_results_csv,
     get_git_commit_hash
 )
+from variance_reduction import (
+    antithetic_variates_samples,
+    antithetic_monte_carlo_prices
+)
 
 
 def monte_carlo_european_call_mpi(

@@ -1,95 +1,169 @@
 #!/usr/bin/env bash
 #
-# Main entry point for Monte Carlo European Option Pricing
+# Monte Carlo European Option Pricing - Main Runner
+# Works on both local machine and HPC cluster
 #
-# Usage:
-#   ./run.sh test              # Run validation tests
-#   ./run.sh example           # Run example pricing
-#   ./run.sh help              # Show help message
 
 set -euo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-cd "$SCRIPT_DIR"
-
-# Colors for output
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-NC='\033[0m' # No Color
+# Detect if we're on a cluster (has srun/sbatch)
+if command -v sbatch &> /dev/null; then
+    ON_CLUSTER=true
+else
+    ON_CLUSTER=false
+fi
 
 function print_usage() {
-    echo "Monte Carlo European Option Pricing - Main Runner"
+    echo "Monte Carlo European Option Pricing - Runner Script"
     echo ""
-    echo "Usage: $0 <command>"
+    echo "Usage: $0 <command> [args]"
     echo ""
-    echo "Commands:"
-    echo "  test       - Run validation tests (compare MC vs Black-Scholes)"
-    echo "  test-mpi   - Test MPI implementation"
-    echo "  example    - Run serial example option pricing"
-    echo "  example-mpi - Run MPI example (requires mpirun)"
-    echo "  bs         - Test Black-Scholes formula only"
-    echo "  help       - Show this help message"
+    echo "Testing Commands:"
+    echo "  test           - Run validation tests"
+    echo "  test-serial    - Test serial Monte Carlo"
+    echo "  test-mpi       - Test MPI (local: mpirun, cluster: salloc)"
+    echo ""
+    echo "Cluster Commands (requires Slurm):"
+    echo "  submit-test    - Submit test job"
+    echo "  submit-strong  - Submit strong scaling jobs (nodes: 1,2,4,8)"
+    echo "  submit-weak    - Submit weak scaling jobs (nodes: 1,2,4,8)"
+    echo "  submit-all     - Submit all experiments"
+    echo "  status         - Check job status"
+    echo ""
+    echo "Plotting Commands:"
+    echo "  plot           - Generate all plots from results/"
+    echo "  plot-sample    - Generate sample data and test plots"
     echo ""
     echo "Examples:"
-    echo "  $0 test"
-    echo "  $0 example"
-    echo "  $0 test-mpi"
-    echo "  $0 example-mpi"
+    echo "  ./run.sh test"
+    echo "  ./run.sh submit-all"
+    echo "  ./run.sh plot"
 }
 
 function run_tests() {
-    echo -e "${GREEN}Running validation tests...${NC}"
-    python3 tests/test_black_scholes.py
+    echo "Running validation tests..."
+    python tests/test_black_scholes.py
 }
 
-function run_example() {
-    echo -e "${GREEN}Running example option pricing...${NC}"
-    echo ""
-    
-    # Example 1: ATM option with validation
-    echo "Example 1: At-The-Money Call Option"
-    python3 src/monte_carlo.py \
-        --n-samples 100000 \
-        --S0 100 --K 100 --T 1.0 --r 0.05 --sigma 0.2 \
-        --validate
-    
-    echo ""
-    echo "Example 2: In-The-Money Call Option"
-    python3 src/monte_carlo.py \
-        --n-samples 100000 \
-        --S0 110 --K 100 --T 1.0 --r 0.05 --sigma 0.2 \
-        --validate
-}
-
-function test_black_scholes() {
-    echo -e "${GREEN}Testing Black-Scholes formula...${NC}"
-    python3 src/option_pricing.py
+function test_serial() {
+    echo "Testing serial Monte Carlo..."
+    python src/monte_carlo.py --n-samples 100000 --validate
 }
 
 function test_mpi() {
-    echo -e "${GREEN}Running MPI comparison tests...${NC}"
-    python3 tests/test_mpi_serial_comparison.py
+    if $ON_CLUSTER; then
+        echo "Testing MPI on cluster (interactive allocation)..."
+        salloc --nodes=1 --ntasks=4 --time=00:05:00 \
+            srun python src/mpi_monte_carlo.py --n-samples 1000000 --validate
+    else
+        if command -v mpirun &> /dev/null; then
+            echo "Testing MPI locally..."
+            mpirun -n 4 python src/mpi_monte_carlo.py --n-samples 1000000 --validate
+        else
+            echo "Error: mpirun not found. Install OpenMPI or run on cluster."
+            exit 1
+        fi
+    fi
 }
 
-function run_example_mpi() {
-    echo -e "${GREEN}Running MPI example option pricing...${NC}"
-    echo ""
-    
-    # Check if mpirun exists
-    if ! command -v mpirun &> /dev/null; then
-        echo -e "${RED}Error: mpirun not found${NC}"
-        echo "Install OpenMPI:"
-        echo "  macOS:  brew install open-mpi"
-        echo "  Ubuntu: sudo apt-get install openmpi-bin"
+function submit_test() {
+    if ! $ON_CLUSTER; then
+        echo "Error: This command requires Slurm (run on cluster)"
         exit 1
     fi
+    echo "Submitting test job..."
+    sbatch slurm/test_run.sbatch
+    squeue -u $USER
+}
+
+function submit_strong() {
+    if ! $ON_CLUSTER; then
+        echo "Error: This command requires Slurm (run on cluster)"
+        exit 1
+    fi
+    echo "Submitting strong scaling jobs..."
+    for nodes in 1 2 4 8; do
+        echo "  Submitting ${nodes} node(s)..."
+        sbatch --nodes=$nodes slurm/cpu_strong_scaling.sbatch
+    done
+    sleep 1
+    squeue -u $USER
+}
+
+function submit_weak() {
+    if ! $ON_CLUSTER; then
+        echo "Error: This command requires Slurm (run on cluster)"
+        exit 1
+    fi
+    echo "Submitting weak scaling jobs..."
+    for nodes in 1 2 4 8; do
+        echo "  Submitting ${nodes} node(s)..."
+        sbatch --nodes=$nodes slurm/cpu_weak_scaling.sbatch
+    done
+    sleep 1
+    squeue -u $USER
+}
+
+function submit_all() {
+    if ! $ON_CLUSTER; then
+        echo "Error: This command requires Slurm (run on cluster)"
+        exit 1
+    fi
+    echo "Submitting ALL experiments..."
+    echo ""
     
-    echo "Example: 4 MPI ranks with 100K samples each (400K total)"
-    mpirun -n 4 python3 src/mpi_monte_carlo.py \
-        --n-samples 400000 \
-        --S0 100 --K 100 --T 1.0 --r 0.05 --sigma 0.2 \
-        --validate
+    # Test job
+    echo "1. Test job..."
+    sbatch slurm/test_run.sbatch
+    
+    # Strong scaling
+    echo "2. Strong scaling (1,2,4,8 nodes)..."
+    for nodes in 1 2 4 8; do
+        sbatch --nodes=$nodes slurm/cpu_strong_scaling.sbatch
+    done
+    
+    # Weak scaling
+    echo "3. Weak scaling (1,2,4,8 nodes)..."
+    for nodes in 1 2 4 8; do
+        sbatch --nodes=$nodes slurm/cpu_weak_scaling.sbatch
+    done
+    
+    # Convergence
+    echo "4. Convergence test..."
+    sbatch slurm/convergence_test.sbatch
+    
+    # Profiling
+    echo "5. Profiling run..."
+    sbatch slurm/profile_run.sbatch
+    
+    echo ""
+    echo "All jobs submitted!"
+    sleep 1
+    squeue -u $USER
+}
+
+function check_status() {
+    if ! $ON_CLUSTER; then
+        echo "Error: This command requires Slurm (run on cluster)"
+        exit 1
+    fi
+    squeue -u $USER
+    echo ""
+    sacct -u $USER --format=JobID,JobName,State,Elapsed,MaxRSS
+}
+
+function generate_plots() {
+    echo "Generating plots from results..."
+    python src/plot_results.py --all results/
+}
+
+function generate_sample_plots() {
+    echo "Generating sample data and test plots..."
+    python src/plot_results.py --generate-sample
+    python src/plot_results.py --all results/sample_data
+    echo ""
+    echo "Sample plots created in results/"
+    ls -lh results/*.png
 }
 
 # Main command dispatcher
@@ -97,26 +171,40 @@ case "${1:-help}" in
     test)
         run_tests
         ;;
+    test-serial)
+        test_serial
+        ;;
     test-mpi)
         test_mpi
         ;;
-    example)
-        run_example
+    submit-test)
+        submit_test
         ;;
-    example-mpi)
-        run_example_mpi
+    submit-strong)
+        submit_strong
         ;;
-    bs)
-        test_black_scholes
+    submit-weak)
+        submit_weak
+        ;;
+    submit-all)
+        submit_all
+        ;;
+    status)
+        check_status
+        ;;
+    plot)
+        generate_plots
+        ;;
+    plot-sample)
+        generate_sample_plots
         ;;
     help|--help|-h)
         print_usage
         ;;
     *)
-        echo -e "${RED}Error: Unknown command '$1'${NC}"
+        echo "Error: Unknown command '$1'"
         echo ""
         print_usage
         exit 1
         ;;
 esac
-
