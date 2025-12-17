@@ -1,0 +1,22 @@
+# started on Thu Dec  4 22:48:18 2025
+
+
+ Performance counter stats for 'python src/mpi_monte_carlo.py --n-samples 10000000 --S0 100 --K 100 --T 1.0 --r 0.05 --sigma 0.2':
+
+           1048.75 msec task-clock:u                     #    0.355 CPUs utilized             
+                 0      context-switches:u               #    0.000 /sec                      
+                 0      cpu-migrations:u                 #    0.000 /sec                      
+             16958      page-faults:u                    #   16.170 K/sec                     
+        2196859065      cycles:u                         #    2.095 GHz                       
+         373904587      stalled-cycles-frontend:u        #   17.02% frontend cycles idle      
+        3601752921      instructions:u                   #    1.64  insn per cycle            
+                                                  #    0.10  stalled cycles per insn   
+         669594371      branches:u                       #  638.470 M/sec                     
+          13097702      branch-misses:u                  #    1.96% of all branches           
+
+       2.955514196 seconds time elapsed
+
+       0.699015000 seconds user
+       0.267124000 seconds sys
+
+

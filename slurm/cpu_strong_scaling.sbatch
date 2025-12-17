@@ -1,11 +1,12 @@
 #!/bin/bash
 #SBATCH --job-name=mc-strong          # Job name
-#SBATCH --nodes=1                     # Will be overridden by job array or manual submission
-#SBATCH --ntasks-per-node=16          # MPI ranks per node (adjust to cluster specs)
+#SBATCH --nodes=1                     # Will be overridden by --nodes= when submitting
+#SBATCH --ntasks-per-node=2           # MPI ranks per node (cluster has 2 CPUs/node)
 #SBATCH --cpus-per-task=1             # CPUs per MPI rank
-#SBATCH --time=00:30:00               # 30 minutes
-#SBATCH --output=results/logs/strong_%j_n%N.out
-#SBATCH --error=results/logs/strong_%j_n%N.err
+#SBATCH --mem-per-cpu=512M            # Increased memory to prevent OOM errors
+#SBATCH --time=01:00:00               # 1 hour
+#SBATCH --output=results/logs/strong_%j.out
+#SBATCH --error=results/logs/strong_%j.err
 
 # NOTE: Submit this with different node counts:
 # sbatch --nodes=1 slurm/cpu_strong_scaling.sbatch
@@ -16,7 +17,8 @@
 set -euo pipefail
 
 # Fixed problem size for strong scaling
-N_SAMPLES=1000000000  # 1 billion samples
+# Reduced from 100M to avoid OOM errors with 256M default memory
+N_SAMPLES=20000000  # 20 million samples (good balance of accuracy and memory usage)
 
 echo "========================================"
 echo "Strong Scaling Experiment"
@@ -32,17 +34,16 @@ echo "========================================"
 
 # Load modules
 module purge
-module load gcc || module load GCC || true
-module load openmpi || module load OpenMPI || true
-module load python/3 || module load Python/3 || true
+module load gcc
+module load python/3
+module load mpi4py
 
 echo ""
 echo "Loaded modules:"
 module list
 echo ""
 
-# If using virtual environment:
-# source ~/venvs/montecarlo/bin/activate
+# Note: Packages installed with --user, no venv needed
 
 # Print environment
 echo "Git commit: $(git rev-parse --short HEAD 2>/dev/null || echo 'N/A')"

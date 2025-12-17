@@ -1,0 +1,40 @@
+Thu Dec  4 22:48:17 2025    results/logs/profile_4581/mpi_monte_carlo.prof
+
+         974786 function calls (956256 primitive calls) in 2.739 seconds
+
+   Ordered by: internal time
+   List reduced from 3148 to 30 due to restriction <30>
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+      544    0.694    0.001    0.694    0.001 {built-in method io.open_code}
+     2617    0.656    0.000    0.656    0.000 {built-in method posix.stat}
+   121/89    0.177    0.001    0.454    0.005 {built-in method _imp.exec_dynamic}
+  121/119    0.143    0.001    0.163    0.001 {built-in method _imp.create_dynamic}
+        1    0.118    0.118    0.118    0.118 {method 'normal' of 'numpy.random.mtrand.RandomState' objects}
+        1    0.082    0.082    0.209    0.209 src/mpi_monte_carlo.py:48(monte_carlo_european_call_mpi)
+       57    0.073    0.001    0.073    0.001 {built-in method posix.listdir}
+      544    0.051    0.000    0.051    0.000 {built-in method marshal.loads}
+        6    0.046    0.008    0.046    0.008 {method 'poll' of 'select.poll' objects}
+    830/1    0.030    0.000    2.741    2.741 {built-in method builtins.exec}
+      323    0.024    0.000    0.037    0.000 /cvmfs/soft.computecanada.ca/easybuild/software/2023/x86-64-v3/Compiler/gcccore/python/3.11.5/lib/python3.11/inspect.py:867(cleandoc)
+     4716    0.018    0.000    0.042    0.000 /home/user91/.local/lib/python3.11/site-packages/scipy/_lib/_docscrape.py:67(read_to_condition)
+     2175    0.017    0.000    0.017    0.000 {method 'findall' of 're.Pattern' objects}
+      439    0.016    0.000    0.026    0.000 /home/user91/.local/lib/python3.11/site-packages/scipy/_lib/doccer.py:225(indentcount_lines)
+     3596    0.016    0.000    0.017    0.000 {method 'sub' of 're.Pattern' objects}
+     3631    0.015    0.000    0.032    0.000 /home/user91/.local/lib/python3.11/site-packages/scipy/_lib/_docscrape.py:168(_is_at_section)
+  937/928    0.013    0.000    0.038    0.000 {built-in method builtins.__build_class__}
+159601/159183    0.012    0.000    0.013    0.000 {built-in method builtins.len}
+ 8208/216    0.012    0.000    0.023    0.000 /cvmfs/soft.computecanada.ca/easybuild/software/2023/x86-64-v3/Compiler/gcccore/python/3.11.5/lib/python3.11/copy.py:128(deepcopy)
+      430    0.011    0.000    0.052    0.000 /home/user91/.local/lib/python3.11/site-packages/scipy/_lib/doccer.py:29(docformat)
+      544    0.011    0.000    0.011    0.000 {method 'read' of '_io.BufferedReader' objects}
+    29688    0.010    0.000    0.012    0.000 /home/user91/.local/lib/python3.11/site-packages/scipy/_lib/_docscrape.py:64(eof)
+     1100    0.010    0.000    0.749    0.001 <frozen importlib._bootstrap_external>:1604(find_spec)
+       44    0.009    0.000    0.009    0.000 {method 'reduce' of 'numpy.ufunc' objects}
+     2175    0.008    0.000    0.047    0.000 /cvmfs/soft.computecanada.ca/easybuild/software/2023/x86-64-v3/Compiler/gcccore/python/3.11.5/lib/python3.11/textwrap.py:419(dedent)
+     9539    0.008    0.000    0.008    0.000 {method 'splitlines' of 'str' objects}
+    24015    0.008    0.000    0.009    0.000 {method 'join' of 'str' objects}
+    41907    0.007    0.000    0.007    0.000 {built-in method builtins.min}
+     7046    0.007    0.000    0.010    0.000 /home/user91/.local/lib/python3.11/site-packages/scipy/_lib/_docscrape.py:57(seek_next_non_empty_line)
+      602    0.007    0.000    0.020    0.000 /cvmfs/soft.computecanada.ca/easybuild/software/2023/x86-64-v3/Compiler/gcccore/python/3.11.5/lib/python3.11/inspect.py:2333(_signature_from_function)
+
+

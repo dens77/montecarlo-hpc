@@ -1,8 +1,9 @@
 #!/bin/bash
 #SBATCH --job-name=mc-convergence    # Job name
 #SBATCH --nodes=1                    # Single node for convergence test
-#SBATCH --ntasks-per-node=16         # MPI ranks per node
+#SBATCH --ntasks-per-node=2          # MPI ranks per node (cluster has 2 CPUs/node)
 #SBATCH --cpus-per-task=1            # CPUs per MPI rank
+#SBATCH --mem-per-cpu=1G             # Increased memory for large sample sizes
 #SBATCH --time=01:00:00              # 1 hour
 #SBATCH --output=results/logs/convergence_%j.out
 #SBATCH --error=results/logs/convergence_%j.err
@@ -17,23 +18,22 @@ echo "Monte Carlo Convergence Test"
 echo "========================================"
 echo "Job ID: $SLURM_JOB_ID"
 echo "Testing convergence rate: error should scale as O(1/√N)"
-echo "Sample sizes: 1e4, 1e5, 1e6, 1e7, 1e8, 1e9"
+echo "Sample sizes: 1e4, 1e5, 1e6, 1e7, 1e8"
 echo "Started at: $(date)"
 echo "========================================"
 
 # Load modules
 module purge
-module load gcc || module load GCC || true
-module load openmpi || module load OpenMPI || true
-module load python/3 || module load Python/3 || true
+module load gcc
+module load python/3
+module load mpi4py
 
 echo ""
 echo "Loaded modules:"
 module list
 echo ""
 
-# If using virtual environment:
-# source ~/venvs/montecarlo/bin/activate
+# Note: Packages installed with --user, no venv needed
 
 # Test parameters (ATM option)
 S0=100
@@ -46,7 +46,8 @@ echo "Test parameters: S0=$S0, K=$K, T=$T, r=$r, sigma=$sigma"
 echo "========================================"
 
 # Array of sample sizes to test
-SAMPLE_SIZES=(10000 100000 1000000 10000000 100000000 1000000000)
+# Reduced largest sizes to avoid OOM: 1e4 to 1e8 (was up to 1e9)
+SAMPLE_SIZES=(10000 100000 1000000 10000000 100000000)
 
 # Output file
 OUTPUT_FILE="results/convergence_${SLURM_JOB_ID}.csv"
@@ -71,7 +72,8 @@ for N in "${SAMPLE_SIZES[@]}"; do
         --output results/convergence_${N}_${SLURM_JOB_ID}.csv
     
     # Append to main convergence file
-    tail -n 1 results/convergence_${N}_${SLURM_JOB_ID}.csv >> $OUTPUT_FILE
+    tail -n 1 results/convergence_${N}_${SLURM_JOB_ID}.csv | \
+        awk -F',' '{print $3","$10","$11","$12","$13","$14","$15","$16}' >> $OUTPUT_FILE
     
     echo "Completed N=$N"
 done

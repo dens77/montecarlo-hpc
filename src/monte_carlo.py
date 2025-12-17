@@ -143,16 +143,18 @@ def monte_carlo_european_call_antithetic(
         S0, K, T, r, sigma, Z_positive, Z_negative
     )
     
-    # Combine payoffs
-    all_payoffs = np.concatenate([payoffs_pos, payoffs_neg])
+    # Average each antithetic pair (this is where variance reduction happens!)
+    # Each pair (Z, -Z) is averaged to reduce correlation and variance
+    paired_payoffs = (payoffs_pos + payoffs_neg) / 2.0
     
     # Compute option price: discounted expected payoff
     discount_factor = np.exp(-r * T)
-    option_price = discount_factor * np.mean(all_payoffs)
+    option_price = discount_factor * np.mean(paired_payoffs)
     
-    # Compute standard error
-    std_payoffs = np.std(all_payoffs, ddof=1)
-    standard_error = discount_factor * std_payoffs / np.sqrt(n_samples)
+    # Compute standard error on paired averages
+    # Use n_pairs (not n_samples) since we have n_pairs independent estimates
+    std_payoffs = np.std(paired_payoffs, ddof=1)
+    standard_error = discount_factor * std_payoffs / np.sqrt(n_pairs)
     
     # End timing
     elapsed_time = time.perf_counter() - start_time

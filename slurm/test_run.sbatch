@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=mc-test           # Job name
 #SBATCH --nodes=1                    # Number of nodes
-#SBATCH --ntasks-per-node=4          # MPI ranks per node (adjust based on cluster)
+#SBATCH --ntasks-per-node=2          # MPI ranks per node (cluster has 2 CPUs/node)
 #SBATCH --cpus-per-task=1            # CPUs per MPI rank
 #SBATCH --time=00:05:00              # 5 minutes
 #SBATCH --output=results/logs/test_%j.out
@@ -29,20 +29,17 @@ echo "Working directory: $(pwd)"
 echo "========================================"
 
 # Load modules
-# Adjust these based on what's available on your cluster
-# Check with: module avail
 module purge
-module load gcc || module load GCC || true
-module load openmpi || module load OpenMPI || true
-module load python/3 || module load Python/3 || true
+module load gcc
+module load python/3
+module load mpi4py
 
 echo ""
 echo "Loaded modules:"
 module list
 echo ""
 
-# If using virtual environment:
-# source ~/venvs/montecarlo/bin/activate
+# Note: Packages installed with --user, no venv needed on cluster
 
 # Print environment info
 echo "Python: $(which python)"

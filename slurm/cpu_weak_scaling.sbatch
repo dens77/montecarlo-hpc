@@ -1,11 +1,12 @@
 #!/bin/bash
 #SBATCH --job-name=mc-weak            # Job name
-#SBATCH --nodes=1                     # Will be overridden by job array or manual submission
-#SBATCH --ntasks-per-node=16          # MPI ranks per node (adjust to cluster specs)
+#SBATCH --nodes=1                     # Will be overridden by --nodes= when submitting
+#SBATCH --ntasks-per-node=2           # MPI ranks per node (cluster has 2 CPUs/node)
 #SBATCH --cpus-per-task=1             # CPUs per MPI rank
-#SBATCH --time=00:30:00               # 30 minutes
-#SBATCH --output=results/logs/weak_%j_n%N.out
-#SBATCH --error=results/logs/weak_%j_n%N.err
+#SBATCH --mem-per-cpu=512M            # Prevent OOM for large weak scaling runs
+#SBATCH --time=01:00:00               # 1 hour
+#SBATCH --output=results/logs/weak_%j.out
+#SBATCH --error=results/logs/weak_%j.err
 
 # NOTE: Submit this with different node counts:
 # sbatch --nodes=1 slurm/cpu_weak_scaling.sbatch
@@ -16,8 +17,9 @@
 set -euo pipefail
 
 # Weak scaling: problem size grows with nodes
-# Keep work per rank constant (~6.25M samples per rank for 16 ranks/node)
-SAMPLES_PER_NODE=100000000  # 100M samples per node
+# Keep work per rank constant
+# Start with smaller problem, increase if jobs complete quickly
+SAMPLES_PER_NODE=10000000  # 10M samples per node (increase to 100M if this completes fast)
 N_SAMPLES=$(($SAMPLES_PER_NODE * $SLURM_JOB_NUM_NODES))
 
 echo "========================================"
@@ -35,17 +37,16 @@ echo "========================================"
 
 # Load modules
 module purge
-module load gcc || module load GCC || true
-module load openmpi || module load OpenMPI || true
-module load python/3 || module load Python/3 || true
+module load gcc
+module load python/3
+module load mpi4py
 
 echo ""
 echo "Loaded modules:"
 module list
 echo ""
 
-# If using virtual environment:
-# source ~/venvs/montecarlo/bin/activate
+# Note: Packages installed with --user, no venv needed
 
 # Print environment
 echo "Git commit: $(git rev-parse --short HEAD 2>/dev/null || echo 'N/A')"

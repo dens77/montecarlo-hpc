@@ -25,8 +25,8 @@ function print_usage() {
     echo ""
     echo "Cluster Commands (requires Slurm):"
     echo "  submit-test    - Submit test job"
-    echo "  submit-strong  - Submit strong scaling jobs (nodes: 1,2,4,8)"
-    echo "  submit-weak    - Submit weak scaling jobs (nodes: 1,2,4,8)"
+    echo "  submit-strong  - Submit strong scaling jobs (nodes: 1,2,4,6)"
+    echo "  submit-weak    - Submit weak scaling jobs (nodes: 1,2,4,6)"
     echo "  submit-all     - Submit all experiments"
     echo "  status         - Check job status"
     echo ""
@@ -82,7 +82,8 @@ function submit_strong() {
         exit 1
     fi
     echo "Submitting strong scaling jobs..."
-    for nodes in 1 2 4 8; do
+    # Cluster has 6 CPU nodes, so test 1,2,4,6 nodes
+    for nodes in 1 2 4 6; do
         echo "  Submitting ${nodes} node(s)..."
         sbatch --nodes=$nodes slurm/cpu_strong_scaling.sbatch
     done
@@ -96,7 +97,8 @@ function submit_weak() {
         exit 1
     fi
     echo "Submitting weak scaling jobs..."
-    for nodes in 1 2 4 8; do
+    # Cluster has 6 CPU nodes, so test 1,2,4,6 nodes
+    for nodes in 1 2 4 6; do
         echo "  Submitting ${nodes} node(s)..."
         sbatch --nodes=$nodes slurm/cpu_weak_scaling.sbatch
     done
@@ -117,14 +119,14 @@ function submit_all() {
     sbatch slurm/test_run.sbatch
     
     # Strong scaling
-    echo "2. Strong scaling (1,2,4,8 nodes)..."
-    for nodes in 1 2 4 8; do
+    echo "2. Strong scaling (1,2,4,6 nodes)..."
+    for nodes in 1 2 4 6; do
         sbatch --nodes=$nodes slurm/cpu_strong_scaling.sbatch
     done
     
     # Weak scaling
-    echo "3. Weak scaling (1,2,4,8 nodes)..."
-    for nodes in 1 2 4 8; do
+    echo "3. Weak scaling (1,2,4,6 nodes)..."
+    for nodes in 1 2 4 6; do
         sbatch --nodes=$nodes slurm/cpu_weak_scaling.sbatch
     done
     

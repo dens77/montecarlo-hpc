@@ -14,34 +14,6 @@ from typing import Tuple, Optional
 
 
 def antithetic_variates_samples(n_pairs: int, seed: Optional[int] = None) -> Tuple[np.ndarray, np.ndarray]:
-    """
-    Generate antithetic variate pairs for variance reduction.
-    
-    For each random normal Z ~ N(0,1), also use -Z.
-    This creates negatively correlated pairs that reduce variance.
-    
-    Theory:
-        Var[(f(Z) + f(-Z))/2] ≤ [Var(f(Z)) + Var(f(-Z))]/2 = Var(f(Z))
-        
-        For monotonic functions f, Cov(f(Z), f(-Z)) < 0, giving:
-        Var[(f(Z) + f(-Z))/2] < Var(f(Z))/2
-        
-        This means we get 2x variance reduction (or equivalent accuracy with N/2 samples).
-    
-    Args:
-        n_pairs: Number of pairs to generate
-        seed: Random seed for reproducibility
-        
-    Returns:
-        Tuple of (Z_positive, Z_negative) where Z_negative = -Z_positive
-        
-    Example:
-        >>> Z1, Z2 = antithetic_variates_samples(1000, seed=42)
-        >>> np.allclose(Z1 + Z2, 0)  # Z2 = -Z1
-        True
-        >>> len(Z1)  # 1000 pairs = 2000 samples total
-        1000
-    """
     if seed is not None:
         np.random.seed(seed)
     
@@ -63,21 +35,7 @@ def antithetic_monte_carlo_prices(
     Z_positive: np.ndarray,
     Z_negative: np.ndarray
 ) -> Tuple[np.ndarray, np.ndarray]:
-    """
-    Compute option prices for antithetic variate pairs.
-    
-    Args:
-        S0: Initial stock price
-        K: Strike price
-        T: Time to maturity
-        r: Risk-free rate
-        sigma: Volatility
-        Z_positive: Positive random normals
-        Z_negative: Negative random normals (= -Z_positive)
-        
-    Returns:
-        Tuple of (payoffs_positive, payoffs_negative)
-    """
+
     # GBM parameters
     drift = (r - 0.5 * sigma**2) * T
     diffusion_factor = sigma * np.sqrt(T)
@@ -98,30 +56,7 @@ def control_variate_adjustment(
     control_values: np.ndarray,
     control_mean: float
 ) -> float:
-    """
-    Apply control variate variance reduction.
-    
-    Uses a known quantity (control) to reduce variance.
-    For European options, can use the stock price as control variate.
-    
-    Theory:
-        Adjusted estimate: Y* = Y - β(X - E[X])
-        where β is chosen to minimize Var(Y*)
-        Optimal β = Cov(Y,X) / Var(X)
-    
-    Args:
-        mc_payoffs: Monte Carlo payoff samples
-        control_values: Control variate samples (e.g., final stock prices)
-        control_mean: Known mean of control variate
-        
-    Returns:
-        Adjusted mean estimate with reduced variance
-        
-    Note:
-        This is more complex than antithetic variates and requires
-        knowledge of E[X]. For simple European options, antithetic
-        variates are usually preferred.
-    """
+
     # Compute optimal coefficient
     covariance = np.cov(mc_payoffs, control_values)[0, 1]
     variance_control = np.var(control_values, ddof=1)

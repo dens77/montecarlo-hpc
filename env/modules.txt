@@ -1,24 +1,10 @@
-# Magic Castle Cluster - Module Load Commands
-#
-# Usage on cluster:
-#   source env/modules.txt
-# Or in Slurm scripts:
-#   module purge
-#   source env/modules.txt
-#
-# These module versions should be available on Magic Castle (Alliance/EESSI)
+# Cluster Module Load Commands
+# Usage: source env/modules.txt (or copy commands to your shell)
 
-# Compiler toolchain
-module load gcc/11.3.0
-
-# MPI implementation
-module load openmpi/4.1.5
-
-# Python with scientific stack
-module load python/3.11.2
-
-# Optional: CUDA for GPU version (uncomment if needed)
-# module load cuda/12.2
+module purge
+module load gcc
+module load python/3
+module load mpi4py
 
 # Verify loaded modules
 module list

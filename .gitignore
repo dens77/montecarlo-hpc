@@ -67,17 +67,6 @@ venv.bak/
 *~
 .DS_Store
 
-# Results (keep structure, ignore data)
-results/*.csv
-results/*.png
-results/*.svg
-results/*.pdf
-results/logs/*.out
-results/logs/*.err
-
-# Keep directory structure
-!results/.gitkeep
-!results/logs/.gitkeep
 
 # Slurm output files
 slurm-*.out

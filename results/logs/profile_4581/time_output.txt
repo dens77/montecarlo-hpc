@@ -1,0 +1,34 @@
+======================================================================
+MPI Parallel Monte Carlo European Call Option Pricing
+======================================================================
+MPI Configuration:
+  Number of ranks:      2
+  Samples per rank:     ~5,000,000
+
+Option Parameters:
+  S0 (Initial price):   $100.00
+  K (Strike price):     $100.00
+  T (Time to maturity):  1.00 years
+  r (Risk-free rate):    0.0500 (5.00%)
+  sigma (Volatility):    0.2000 (20.00%)
+
+Monte Carlo Settings:
+  Total samples:         10,000,000
+  Base random seed:      42
+  Git commit:            1915a5a7
+======================================================================
+[2025-12-04 22:48:23] [Rank 0] Starting MPI Monte Carlo with 2 ranks
+[2025-12-04 22:48:23] [Rank 0] Total samples: 10,000,000
+[2025-12-04 22:48:23] [Rank 0] Samples per rank: ~5,000,000
+[2025-12-04 22:48:24] [Rank 0] MPI Monte Carlo completed in 0.20s
+
+Results:
+  Monte Carlo price:    $10.449510
+  Standard error:       $0.004654
+  95% Confidence Int.:  [$10.440388, $10.458632]
+
+Performance:
+  Wall-clock time:      0.20s
+  Throughput:           51,049,011 samples/sec
+  Throughput per rank:  25,524,506 samples/sec/rank
+======================================================================

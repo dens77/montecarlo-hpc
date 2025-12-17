@@ -1,0 +1,2 @@
+method,n_samples,S0,K,T,r,sigma,mc_price,mc_stderr,bs_price,abs_error,rel_error_pct,elapsed_sec,throughput_samples_per_sec,antithetic,seed
+serial_mc_antithetic,1000000,100.0,100.0,1.0,0.05,0.2,10.456798188927092,0.010397735827982604,10.450583572185565,0.006214616741527124,0.059466695793596154,0.05100922000000008,19604298.987516344,True,42

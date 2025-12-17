@@ -1,0 +1,2 @@
+method,n_ranks,n_samples,samples_per_rank,S0,K,T,r,sigma,mc_price,mc_stderr,bs_price,abs_error,rel_error_pct,elapsed_sec,throughput_samples_per_sec,throughput_per_rank,seed,git_commit
+mpi_mc,2,20000000,10000000,100.0,100.0,1.0,0.05,0.2,10.45186809432306,0.003291125766540304,10.450583572185565,0.0012845221374959692,0.012291391467503791,0.6798193659633398,29419579.67269577,14709789.836347885,42,1915a5a7

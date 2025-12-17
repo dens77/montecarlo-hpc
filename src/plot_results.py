@@ -49,10 +49,15 @@ def plot_strong_scaling(csv_files: List[str], output_path: str = "results/strong
     dfs = []
     for file in csv_files:
         df = pd.read_csv(file)
-        # Extract node count from filename or data
-        if 'n_ranks' in df.columns:
-            # Calculate nodes assuming 16 tasks per node (adjust if needed)
-            df['nodes'] = df['n_ranks'] / 16
+        # Extract node count from filename (e.g., strong_scaling_4nodes_12345.csv)
+        import re
+        filename = Path(file).name
+        match = re.search(r'(\d+)nodes', filename)
+        if match:
+            df['nodes'] = int(match.group(1))
+        elif 'n_ranks' in df.columns:
+            # Fallback: calculate from ranks (cluster has 2 tasks per node)
+            df['nodes'] = df['n_ranks'] / 2
         dfs.append(df)
     
     if not dfs:
@@ -117,8 +122,15 @@ def plot_weak_scaling(csv_files: List[str], output_path: str = "results/weak_sca
     dfs = []
     for file in csv_files:
         df = pd.read_csv(file)
-        if 'n_ranks' in df.columns:
-            df['nodes'] = df['n_ranks'] / 16
+        # Extract node count from filename (e.g., weak_scaling_4nodes_12345.csv)
+        import re
+        filename = Path(file).name
+        match = re.search(r'(\d+)nodes', filename)
+        if match:
+            df['nodes'] = int(match.group(1))
+        elif 'n_ranks' in df.columns:
+            # Fallback: calculate from ranks (cluster has 2 tasks per node)
+            df['nodes'] = df['n_ranks'] / 2
         dfs.append(df)
     
     if not dfs:
@@ -383,8 +395,8 @@ def generate_sample_data(output_dir: str = "results/sample_data") -> None:
     
     # Sample strong scaling data
     # Simulate realistic speedup with some overhead
-    nodes = [1, 2, 4, 8]
-    ranks = [16, 32, 64, 128]
+    nodes = [1, 2, 4, 6]  # Match actual cluster configuration
+    ranks = [2, 4, 8, 12]  # 2 tasks per node
     n_samples = 1_000_000_000
     baseline_time = 100.0  # seconds for 1 node
     
@@ -412,8 +424,8 @@ def generate_sample_data(output_dir: str = "results/sample_data") -> None:
     # Sample weak scaling data
     weak_data = []
     for n, r in zip(nodes, ranks):
-        # Each node does 100M samples
-        n_samples_weak = 100_000_000 * n
+        # Each node does 10M samples (matching actual cluster setup)
+        n_samples_weak = 10_000_000 * n
         # Time should be roughly constant (weak scaling)
         time_sec = 10.0 * (1 + 0.05 * (n - 1))  # Small increase
         

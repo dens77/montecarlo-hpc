@@ -1,9 +1,10 @@
 #!/bin/bash
 #SBATCH --job-name=mc-profile         # Job name
 #SBATCH --nodes=1                     # Single node for profiling
-#SBATCH --ntasks-per-node=16          # MPI ranks per node
+#SBATCH --ntasks-per-node=2           # MPI ranks per node (cluster has 2 CPUs/node)
 #SBATCH --cpus-per-task=1             # CPUs per MPI rank
-#SBATCH --time=00:30:00               # 30 minutes
+#SBATCH --mem-per-cpu=512M            # Adequate memory for profiling
+#SBATCH --time=01:00:00               # 1 hour
 #SBATCH --output=results/logs/profile_%j.out
 #SBATCH --error=results/logs/profile_%j.err
 
@@ -21,17 +22,16 @@ echo "========================================"
 
 # Load modules
 module purge
-module load gcc || module load GCC || true
-module load openmpi || module load OpenMPI || true
-module load python/3 || module load Python/3 || true
+module load gcc
+module load python/3
+module load mpi4py
 
 echo ""
 echo "Loaded modules:"
 module list
 echo ""
 
-# If using virtual environment:
-# source ~/venvs/montecarlo/bin/activate
+# Note: Packages installed with --user, no venv needed
 
 # Problem size for profiling (not too large, not too small)
 N_SAMPLES=10000000  # 10M samples
@@ -85,16 +85,27 @@ else
 fi
 
 #
-# Method 3: time command (always available)
+# Method 3: time command (if available)
 #
-echo ""
-echo "Running with /usr/bin/time for resource usage..."
-echo "----------------------------------------"
-
-/usr/bin/time -v srun python src/mpi_monte_carlo.py \
-    --n-samples $N_SAMPLES \
-    --S0 100 --K 100 --T 1.0 --r 0.05 --sigma 0.2 \
-    2>&1 | tee ${PROFILE_DIR}/time_output.txt
+if command -v /usr/bin/time &> /dev/null; then
+    echo ""
+    echo "Running with /usr/bin/time for resource usage..."
+    echo "----------------------------------------"
+    
+    /usr/bin/time -v srun python src/mpi_monte_carlo.py \
+        --n-samples $N_SAMPLES \
+        --S0 100 --K 100 --T 1.0 --r 0.05 --sigma 0.2 \
+        2>&1 | tee ${PROFILE_DIR}/time_output.txt
+else
+    echo ""
+    echo "/usr/bin/time not available, using built-in time command..."
+    echo "----------------------------------------"
+    
+    time srun python src/mpi_monte_carlo.py \
+        --n-samples $N_SAMPLES \
+        --S0 100 --K 100 --T 1.0 --r 0.05 --sigma 0.2 \
+        2>&1 | tee ${PROFILE_DIR}/time_output.txt
+fi
 
 echo ""
 echo "========================================"
